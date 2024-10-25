@@ -1,0 +1,22 @@
+#include <stdio.h>
+#include <sys/dir.h>
+#include <unistd.h>
+
+int main()
+{
+    DIR *d;
+    struct dirent *dir;
+    const char *path = ".";
+    d = opendir(path);
+    if (d)
+    {
+        while ((dir = readdir(d)) != NULL)
+        {
+            printf("%s\n", dir->d_name);
+        }
+        closedir(d);
+    }
+    else
+        printf("Error in opening directory");
+    return 0;
+}

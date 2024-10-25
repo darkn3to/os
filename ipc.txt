@@ -1,0 +1,87 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <sys/shm.h>
+
+struct msg_buffer {
+    long msg_type;
+    char msg_text[100];
+} message;
+
+void pipe_communication() {
+    printf("=== Pipe Communication ===\n");
+    int fd[2]; // File descriptors for pipe
+    if (pipe(fd) == -1) {
+        perror("Pipe failed");
+        return;
+    }
+
+    pid_t pid_pipe = fork();
+    if (pid_pipe == 0) {
+        // Child Process for Pipe
+        close(fd[0]); // Close reading end
+        char pipe_msg[] = "Hello from pipe child";
+        write(fd[1], pipe_msg, strlen(pipe_msg) + 1); // Write message to pipe
+        close(fd[1]); // Close writing end
+        return; // Exit child process
+    }
+
+    // Parent Process
+    close(fd[1]); // Close writing end
+    char read_pipe_msg[100];
+    read(fd[0], read_pipe_msg, sizeof(read_pipe_msg)); // Read message from pipe
+    close(fd[0]); // Close reading end
+    wait(NULL); // Wait for child process to finish
+    printf("Parent received from pipe: %s\n", read_pipe_msg);
+}
+
+void message_queue_communication() {
+    printf("\n=== Message Queue Communication ===\n");
+    key_t key_msg = ftok("progfile", 65); // Generate unique key
+    int msgid = msgget(key_msg, 0666 | IPC_CREAT); // Create message queue
+
+    pid_t pid_msg = fork();
+    if (pid_msg == 0) {
+        // Child Process for Message Queue
+        message.msg_type = 1; // Set message type
+        strcpy(message.msg_text, "Hello from message queue child");
+        msgsnd(msgid, &message, sizeof(message), 0); // Send message to queue
+        return; // Exit child process
+    }
+
+    // Parent Process
+    wait(NULL); // Wait for child process to finish
+    msgrcv(msgid, &message, sizeof(message), 1, 0); // Receive message from queue
+    printf("Parent received from message queue: %s\n", message.msg_text);
+    //msgctl(msgid, IPC_RMID, NULL); // Destroy message queue
+}
+
+void shared_memory_communication() {
+    printf("\n=== Shared Memory Communication ===\n");
+    key_t key_shm = ftok("shmfile", 65); // Generate unique key for shared memory
+    int shmid = shmget(key_shm, 1024, 0666 | IPC_CREAT); // Create shared memory
+    char *shared_mem = (char *)shmat(shmid, (void *)0, 0); // Attach shared memory
+
+    pid_t pid_shm = fork();
+    if (pid_shm == 0) {
+        // Child Process for Shared Memory
+        strcpy(shared_mem, "Hello from shared memory child"); // Write message to shared memory
+        return; // Exit child process
+    }
+
+    // Parent Process
+    wait(NULL); // Wait for child process to finish
+    printf("Parent received from shared memory: %s\n", shared_mem);
+    shmdt(shared_mem); // Detach shared memory
+    shmctl(shmid, IPC_RMID, NULL); // Destroy shared memory
+}
+
+int main() {
+    pipe_communication(); // Handle pipe communication
+    message_queue_communication(); // Handle message queue communication
+    shared_memory_communication(); // Handle shared memory communication
+    return 0; // Exit parent process
+}

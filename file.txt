@@ -1,0 +1,10 @@
+FILE *file;
+file=fopen(filename, "r");
+fprintf(file, "jjasjh");
+char buffer[100];
+while (fgets(buffer,sizeof(buffer), file)!=NULL) {
+printf("%s", buffer);
+}
+while ((ch = fgetc(file)) != EOF) {
+        putchar(ch);  // Print the character to the console
+    }
