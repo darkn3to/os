@@ -1,0 +1,277 @@
+//sequential
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_BLOCKS 500
+
+typedef struct {
+    char name;
+    int start;
+    int noOfBlocks;
+    int *block;
+} File;
+
+int main() {
+    int n;
+    printf("Enter the number of files: ");
+    scanf("%d", &n);
+
+    File files[n];
+    int blockMap[MAX_BLOCKS] = {0};
+
+    for (int i = 0; i < n; i++) {
+        printf("Enter the name of file %d: ", i + 1);
+        scanf("%*c%c", &files[i].name);
+
+        printf("Enter the starting block of file %d: ", i + 1);
+        scanf("%d", &files[i].start);
+
+        printf("Enter the number of blocks of file %d: ", i + 1);
+        scanf("%d", &files[i].noOfBlocks);
+
+        files[i].block = (int *)malloc(files[i].noOfBlocks * sizeof(int));
+
+        int valid = 1;
+        printf("Enter the blocks for file %d: ", i + 1);
+        for (int j = 0; j < files[i].noOfBlocks; j++) {
+            scanf("%d", &files[i].block[j]);
+
+            // Check if the block is already allocated or out of range
+            if (files[i].block[j] >= MAX_BLOCKS || blockMap[files[i].block[j]] == 1) {
+                valid = 0;
+            }
+        }
+
+        if (!valid) {
+            printf("Invalid block allocation for file %c. Please re-enter the details.\n", files[i].name);
+            free(files[i].block);
+            i--; // Repeat the current file input
+        } else {
+            for (int j = 0; j < files[i].noOfBlocks; j++) {
+                blockMap[files[i].block[j]] = 1; // Mark blocks as allocated
+            }
+        }
+    }
+
+    char search;
+    printf("Enter the file to be searched: ");
+    scanf("%*c%c", &search);
+
+    int i;
+    for (i = 0; i < n; i++) {
+        if (files[i].name == search) {
+            break;
+        }
+    }
+
+    if (i != n) {
+        printf("File Name\tStart Block\tNo of Blocks\tBlocks occupied\n");
+        printf("%c\t\t%d\t\t%d\t\t", files[i].name, files[i].start, files[i].noOfBlocks);
+        for (int j = 0; j < files[i].noOfBlocks - 1; j++) {
+            printf("%d, ", files[i].block[j]);
+        }
+        printf("%d\n", files[i].block[files[i].noOfBlocks - 1]);
+    } else {
+        printf("File not found\n");
+    }
+
+    // Free allocated memory
+    for (int i = 0; i < n; i++) {
+        free(files[i].block);
+    }
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+//linked allocation
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_BLOCKS 500
+
+typedef struct DiskBlock {
+    int blockNo;
+    struct DiskBlock *next;
+} DiskBlock;
+
+typedef struct {
+    char name;
+    int start;
+    int noOfBlocks;
+    DiskBlock *block;
+} File;
+
+int isBlockAssigned(int block, int assignedBlocks[]) {
+    return assignedBlocks[block];
+}
+
+int main() {
+    int assignedBlocks[MAX_BLOCKS] = {0};
+    int n;
+
+    printf("Enter number of files: ");
+    scanf("%d", &n);
+    getchar(); // Clear the newline character from the buffer
+
+    File files[n];
+
+    for (int i = 0; i < n; i++) {
+        printf("Enter file %d name: ", i + 1);
+        scanf(" %c", &files[i].name);
+        getchar(); // Clear the newline character from the buffer
+
+        printf("Enter starting block of file %d: ", i + 1);
+        scanf("%d", &files[i].start);
+
+        while (isBlockAssigned(files[i].start, assignedBlocks)) {
+            printf("Block %d is already assigned. Enter a different starting block: ", files[i].start);
+            scanf("%d", &files[i].start);
+        }
+        assignedBlocks[files[i].start] = 1;
+
+        printf("Enter no of blocks in file %d: ", i + 1);
+        scanf("%d", &files[i].noOfBlocks);
+
+        files[i].block = (DiskBlock *)malloc(sizeof(DiskBlock));
+        files[i].block->blockNo = files[i].start;
+
+        DiskBlock *temp = files[i].block;
+        printf("Enter blocks for file %d: ", i + 1);
+        for (int j = 1; j < files[i].noOfBlocks; j++) {
+            int blockNo;
+            scanf("%d", &blockNo);
+
+            while (isBlockAssigned(blockNo, assignedBlocks)) {
+                printf("Block %d is already assigned. Enter a different block number: ", blockNo);
+                scanf("%d", &blockNo);
+            }
+            assignedBlocks[blockNo] = 1;
+
+            temp->next = (DiskBlock *)malloc(sizeof(DiskBlock));
+            temp = temp->next;
+            temp->blockNo = blockNo;
+        }
+        temp->next = NULL;
+    }
+
+    char search;
+    printf("Enter the file name to be searched: ");
+    getchar(); // Clear the newline character from the buffer
+    scanf(" %c", &search);
+
+    int i;
+    for (i = 0; i < n; i++) {
+        if (files[i].name == search) {
+            break;
+        }
+    }
+
+    if (i != n) {
+        printf("File Name\tStart Block\tNo of Blocks\tBlocks occupied\n");
+        printf("%c\t\t%d\t\t%d\t\t", files[i].name, files[i].start, files[i].noOfBlocks);
+
+        DiskBlock *temp = files[i].block;
+        for (int j = 0; j < files[i].noOfBlocks - 1; j++) {
+            printf("%d, ", temp->blockNo);
+            temp = temp->next;
+        }
+        printf("%d\n", temp->blockNo);
+    } else {
+        printf("File not found\n");
+    }
+
+    return 0;
+}
+
+
+
+
+
+ 
+
+
+
+//indexed file allocation
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_BLOCKS 500
+
+typedef struct {
+    char name;
+    int start;
+    int noOfBlocks;
+    int *block;
+} File;
+
+int main() {
+    int n;
+    printf("Enter the number of files: ");
+    scanf("%d", &n);
+
+    File files[n];
+    int blockMap[MAX_BLOCKS] = {0};
+
+    for (int i = 0; i < n; i++) {
+        printf("Enter the name of file %d: ", i + 1);
+        scanf("%*c%c", &files[i].name);
+
+        printf("Enter the starting block of file %d: ", i + 1);
+        scanf("%d", &files[i].start);
+
+        printf("Enter the number of blocks of file %d: ", i + 1);
+        scanf("%d", &files[i].noOfBlocks);
+
+        files[i].block = (int *)malloc(files[i].noOfBlocks * sizeof(int));
+
+        int valid = 1;
+        printf("Enter the blocks for file %d: ", i + 1);
+        for (int j = 0; j < files[i].noOfBlocks; j++) {
+            scanf("%d", &files[i].block[j]);
+
+            // Check if the block is already allocated or out of range
+            if (files[i].block[j] >= MAX_BLOCKS || blockMap[files[i].block[j]] == 1) {
+                valid = 0;
+            }
+        }
+
+        if (!valid) {
+            printf("Invalid block allocation for file %c. Please re-enter the details.\n", files[i].name);
+            free(files[i].block);
+            i--; // Repeat the current file input
+        } else {
+            for (int j = 0; j < files[i].noOfBlocks; j++) {
+                blockMap[files[i].block[j]] = 1; // Mark blocks as allocated
+            }
+        }
+    }
+
+    char search;
+    printf("Enter the file to be searched: ");
+    scanf("%*c%c", &search);
+
+    int i;
+    for (i = 0; i < n; i++) {
+        if (files[i].name == search) {
+            break;
+        }
+    }
+
+    if (i != n) {
+        printf("File Name\tStart Block\tNo of Blocks\tBlocks occupied\n");
+        printf("%c\t\t%d\t\t%d\t\t", files[i].name, files[i].start, files[i].noOfBlocks);
+        for (int j = 0; j < files[i].noOfBlocks - 1; j++) {
+            printf("%d, ", files[i].block[j]);
+        }
+        printf("%d\n", files[i].block[files[i].noOfBlocks - 1]);
+    } else {
+        printf("File not found\n");
+    }
+
+    return 0;
+}

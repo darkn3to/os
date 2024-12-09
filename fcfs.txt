@@ -2,31 +2,36 @@
 #include <stdlib.h>
 
 typedef struct {
-    int id, bt, at, wt, tt, ct;
+    int id, bt, at, wt, tt, ct, rt; // Added rt for response time
 } Process;
 
-void fcfs(int n, Process *p, double *avg_wt, double *avg_tt) {
+void fcfs(int n, Process *p, double *avg_wt, double *avg_tt, double *avg_rt) {
     int i;
-    int total_wt = 0, total_tt = 0;
+    int total_wt = 0, total_tt = 0, total_rt = 0; // Added total_rt for total response time
     p[0].ct = p[0].at + p[0].bt;
     p[0].tt = p[0].ct - p[0].at;
     p[0].wt = p[0].tt - p[0].bt;
+    p[0].rt = 0; // Response time for the first process is 0
     total_wt += p[0].wt;
     total_tt += p[0].tt;
+    total_rt += p[0].rt;
     for (i = 1; i < n; i++) {
         p[i].ct = (p[i-1].ct > p[i].at ? p[i-1].ct : p[i].at) + p[i].bt;
         p[i].tt = p[i].ct - p[i].at;
         p[i].wt = p[i].tt - p[i].bt;
+        p[i].rt = p[i-1].ct - p[i].at; // Response time calculation
         total_wt += p[i].wt;
         total_tt += p[i].tt;
+        total_rt += p[i].rt;
     }
     *avg_wt = (double)total_wt / n;
     *avg_tt = (double)total_tt / n;
+    *avg_rt = (double)total_rt / n; // Average response time
 }
+
 void print_gantt_chart(int n, Process *p) {
     int i;
     int end = 0;
-    
     printf("\nGantt Chart:\n");
     for (i = 0; i < n; i++) {
         printf("|\tP%d\t", p[i].id);
@@ -55,11 +60,12 @@ int main() {
     for (int i = 0; i < n; i++) {
         scanf("%d", &processes[i].at);
     }
-    double avgWaitTime, avgTurnAroundTime;
-    fcfs(n, processes, &avgWaitTime, &avgTurnAroundTime);
+    double avgWaitTime, avgTurnAroundTime, avgResponseTime;
+    fcfs(n, processes, &avgWaitTime, &avgTurnAroundTime, &avgResponseTime);
     print_gantt_chart(n, processes);
     printf("Average Waiting Time: %.2lf\n", avgWaitTime);
     printf("Average Turnaround Time: %.2lf\n", avgTurnAroundTime);
+    printf("Average Response Time: %.2lf\n", avgResponseTime); // Print average response time
     free(processes);
     return 0;
 }
