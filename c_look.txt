@@ -1,62 +1,73 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
+#include <vector>
+#include <algorithm>
 #define MAXTRACKS 200
 
-int clook(int n, int *requests, int currHead) {
+using namespace std;
+
+// Function to calculate total seek time using C-LOOK
+int clook(int n, vector<int>& requests, int currHead) {
     int totalSeek = 0;
-    int reqCompleted[n];
+    vector<bool> reqCompleted(n, false);
     int completed = 0;
 
-    for (int i = 0; i < n; i++)
-        reqCompleted[i] = 0;
+    // Sort the requests for proper circular movement
+    sort(requests.begin(), requests.end());
 
-    printf("Seek sequence: ");
+    cout << "Seek sequence: ";
     while (completed < n) {
         int nextReq = -1;
+
+        // Find the nearest request >= current head
         for (int j = 0; j < n; j++) {
-            if (reqCompleted[j] == 0 && requests[j] >= currHead) {
-                if (nextReq == -1 || requests[j] <= requests[nextReq])
-                    nextReq = j;
+            if (!reqCompleted[j] && requests[j] >= currHead) {
+                nextReq = j;
+                break; // Since requests are sorted, stop at the first match
             }
         }
+
         if (nextReq != -1) {
             totalSeek += requests[nextReq] - currHead;
             currHead = requests[nextReq];
-            reqCompleted[nextReq] = 1;
+            reqCompleted[nextReq] = true;
             completed++;
-            printf("%d ", currHead);
+            cout << currHead << " ";
         } else {
-            int minIndex = -1;
+            // Jump to the smallest request (circular wrap)
             for (int j = 0; j < n; j++) {
-                if (reqCompleted[j] == 0) {
-                    if (minIndex == -1 || requests[j] < requests[minIndex])
-                        minIndex = j;
+                if (!reqCompleted[j]) {
+                    totalSeek += (MAXTRACKS - 1 - currHead) + requests[j];
+                    currHead = requests[j];
+                    break;
                 }
             }
-            totalSeek += (MAXTRACKS - 1 - currHead) + requests[minIndex];
-            currHead = requests[minIndex];
         }
     }
-    printf("\n");
+    cout << endl;
     return totalSeek;
 }
 
 int main() {
     int n;
-    printf("Enter the number of disk requests: ");
-    scanf("%d", &n);
-    int requests[n];
-    printf("Enter the disk requests: ");
+    cout << "Enter the number of disk requests: ";
+    cin >> n;
+
+    vector<int> requests(n);
+    cout << "Enter the disk requests: ";
     for (int i = 0; i < n; i++) {
-        scanf("%d", &requests[i]);
+        cin >> requests[i];
         if (requests[i] >= MAXTRACKS || requests[i] < 0) {
-            printf("Error: Requested track is out of range.\n");
+            cerr << "Error: Requested track is out of range." << endl;
             return 1;
         }
     }
+
     int currHead;
-    printf("Enter the current head position: ");
-    scanf("%d", &currHead);
-    printf("Total seek movement: %d\n", clook(n, requests, currHead));
+    cout << "Enter the current head position: ";
+    cin >> currHead;
+
+    int totalSeek = clook(n, requests, currHead);
+    cout << "Total seek movement: " << totalSeek << endl;
+
     return 0;
 }
